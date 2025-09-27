@@ -1,16 +1,10 @@
 from prefect import flow, task, get_run_logger
 from prefect.logging.loggers import task_run_logger
-from config import ARXIV_URL, DEFAULT_NUM_PAPERS
-
-
-@task
-def get_list_of_papers():
-    task_run_logger = get_run_logger()
-    task_run_logger.info(f"Getting list of papers from {ARXIV_URL}")
-    return 
+from tasks import getpapers, filterpapers
+import arxiv    
 
 @task
-def filter_papers():
+def filter_papers(papers: list[arxiv.Result]):
     task_run_logger = get_run_logger()
     task_run_logger.info(f"Filtering papers")
     pass
@@ -23,8 +17,12 @@ def send_email():
 
 @flow
 def main():
-    get_list_of_papers()
-    filter_papers()
+    task_run_logger = get_run_logger()
+    task_run_logger.info(f"Getting list of papers")
+    papers = getpapers.get_list_of_papers()
+    # task_run_logger.info(papers)
+    task_run_logger.info(f"Found {len(papers)} papers")
+    filter_papers(papers)
     send_email()
 
 

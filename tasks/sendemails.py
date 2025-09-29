@@ -3,7 +3,10 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import List, Mapping
 from prefect import task, get_run_logger
+from prefect.blocks.system import Secret
 
+smtp_pass = Secret.load("smtp-pass")
+smtp_user = Secret.load("smtp-user")
 
 def build_newsletter_html(filtered_papers: List[Mapping[str, str]]) -> str:
     """Builds an HTML newsletter from filtered arXiv papers."""
@@ -50,12 +53,11 @@ def send_email(filtered_papers: List[Mapping[str, str]], recipients: List[str]):
     msg["From"] = "you@example.com"       # change to your sender email
     msg["To"] = ", ".join(recipients)
     msg.attach(MIMEText(html_body, "html"))
-
     # --- Send via SMTP
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:  # change server if needed
             server.starttls()
-            # server.login("xxxx", "xxxxx")  # use app password / env vars
+            server.login(smtp_user.get(), smtp_pass.get())  # use app password / env vars
             server.sendmail(msg["From"], recipients, msg.as_string())
         logger.info("Newsletter sent successfully.")
     except Exception as e:
